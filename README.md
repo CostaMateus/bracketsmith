@@ -28,6 +28,7 @@ Optional parameters:
 
 - `--dry-run` → only checks, without altering files.
 - `--verbose` → shows processed files.
+- `--help` → displays help information.
 - It is possible to pass specific files:
   `vendor/bin/bracketsmith app/Models/User.php`
 

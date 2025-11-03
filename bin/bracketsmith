@@ -1,17 +1,44 @@
 #!/usr/bin/env php
 <?php
 
-require __DIR__ . "/../vendor/autoload.php";
+// Autoloader paths (tries multiple locations)
+$autoloadPaths = [
+    __DIR__ . '/../../../autoload.php', // Installed as dependency
+    __DIR__ . '/../vendor/autoload.php', // Standalone
+];
+
+foreach ( $autoloadPaths as $file )
+{
+    if ( file_exists( $file ) )
+    {
+        require $file;
+        break;
+    }
+}
 
 use BracketSmith\BracketSmith;
 
-$options = getopt( "", [ "dry-run", "verbose" ] );
+$options = getopt( "", [ "dry-run", "verbose", "help" ] );
+
+// Show help
+if ( isset( $options[ "help" ] ) )
+{
+    echo "BracketSmith - Array Spacing Formatter\n\n";
+    echo "Usage: bracketsmith [options] [files...]\n\n";
+    echo "Options:\n";
+    echo "  --dry-run    Check without modifying files\n";
+    echo "  --verbose    Detailed output\n";
+    echo "  --help       Show this help\n\n";
+    echo "If no files are specified, processes: app/, config/, database/, lang/, routes/\n";
+
+    exit( 0 );
+}
 
 $dry_run = isset( $options[ "dry-run" ] );
 $verbose = isset( $options[ "verbose" ] );
 
-$files   = array_slice( $argv, 1 );
-$files   = array_filter( $files, fn( $arg ) => ! str_starts_with( $arg, "--" ) );
+$files = array_slice( $argv, 1 );
+$files = array_filter( $files, fn( $arg ) => ! str_starts_with( $arg, "--" ) );
 
 $smith = new BracketSmith( $dry_run, $verbose );
 $smith->run( $files );
