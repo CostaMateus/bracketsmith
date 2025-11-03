@@ -1,0 +1,17 @@
+#!/usr/bin/env php
+<?php
+
+require __DIR__ . "/../vendor/autoload.php";
+
+use BracketSmith\BracketSmith;
+
+$options = getopt( "", [ "dry-run", "verbose" ] );
+
+$dry_run = isset( $options[ "dry-run" ] );
+$verbose = isset( $options[ "verbose" ] );
+
+$files   = array_slice( $argv, 1 );
+$files   = array_filter( $files, fn( $arg ) => ! str_starts_with( $arg, "--" ) );
+
+$smith = new BracketSmith( $dry_run, $verbose );
+$smith->run( $files );

@@ -1,0 +1,32 @@
+{
+    "name": "costamateus/bracketsmith",
+    "description": "A lightweight PHP tool that polishes array formatting — keeping your brackets neat and consistent.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [{
+        "name": "Mateus Costa",
+        "email": "mateus@costamateus.com.br",
+        "homepage": "https://github.com/costamateus"
+    }],
+    "require": {
+        "php": ">=8.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "BracketSmith\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "BracketSmith\\Tests\\": "tests/"
+        }
+    },
+    "bin": [
+        "bin/bracketsmith"
+    ],
+    "scripts": {
+        "test": "phpunit --colors=always"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
