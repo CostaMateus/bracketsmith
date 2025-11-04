@@ -139,26 +139,31 @@ class BracketSmith
     }
 
     /**
-     * Process a specific file
+     * Process a specific file or directory
      *
-     * @param string $file_path
+     * @param string $path
      *
      * @return bool
      */
-    public function processFile( string $file_path ) : bool
+    public function processFile( string $path ) : bool
     {
-        $this->processed_count++;
-
-        if ( ! file_exists( $file_path ) )
+        if ( ! file_exists( $path ) )
         {
-            $this->log( "❌ File not found: " . $file_path );
+            $this->log( "❌ Path not found: " . $path );
 
             return false;
         }
 
+        // If it's a directory, process it recursively
+        if ( is_dir( $path ) )
+            return $this->processDirectory( $path );
+
+        // Process single file
+        $this->processed_count++;
+
         try
         {
-            $content     = file_get_contents( $file_path );
+            $content     = file_get_contents( $path );
 
             $new_content = $this->addSpacesToArrays( $content );
 
@@ -168,24 +173,24 @@ class BracketSmith
 
                 if ( ! $this->dry_run )
                 {
-                    file_put_contents( $file_path, $new_content );
-                    $this->verboseLog( "✅ Processed: " . $file_path );
+                    file_put_contents( $path, $new_content );
+                    $this->verboseLog( "✅ Processed: " . $path );
                 }
                 else
                 {
-                    $this->verboseLog( "🔍 Would be processed: " . $file_path );
+                    $this->verboseLog( "🔍 Would be processed: " . $path );
                 }
 
                 return true;
             }
 
-            $this->verboseLog( "⏭️ No changes needed: " . $file_path );
+            $this->verboseLog( "⏭️ No changes needed: " . $path );
 
             return true;
         }
         catch ( Exception $e )
         {
-            $this->log( sprintf( "❌ Error processing file %s: ", $file_path ) . $e->getMessage() );
+            $this->log( sprintf( "❌ Error processing file %s: ", $path ) . $e->getMessage() );
 
             return false;
         }

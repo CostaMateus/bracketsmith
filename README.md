@@ -29,8 +29,11 @@ Optional parameters:
 - `--dry-run` → only checks, without altering files.
 - `--verbose` → shows processed files.
 - `--help` → displays help information.
-- It is possible to pass specific files:
-  `vendor/bin/bracketsmith app/Models/User.php`
+- It is possible to pass specific files or directories:
+  ```bash
+  vendor/bin/bracketsmith app/Models/User.php    # Process single file
+  vendor/bin/bracketsmith app/Models/            # Process directory
+  ```
 
 ---
 
