@@ -1,0 +1,16 @@
+{
+    "directories": [
+        "app/",
+        "config/",
+        "database/",
+        "lang/",
+        "routes/"
+    ],
+    "skip_patterns": [
+        "vendor/",
+        "storage/",
+        "bootstrap/cache/",
+        "node_modules/",
+        ".git/"
+    ]
+}

@@ -37,6 +37,35 @@ Optional parameters:
 
 ---
 
+## ⚙️ Configuration
+
+You can customize which directories and files to process by creating a `bracketsmith.json` file in your project root.
+
+Example `bracketsmith.json`:
+
+```json
+{
+    "directories": [
+        "app/",
+        "routes/"
+    ],
+    "skip_patterns": [
+        "vendor/",
+        "storage/",
+        "node_modules/"
+    ]
+}
+```
+
+- `directories`: Array of directories to process (relative paths).
+- `skip_patterns`: Array of patterns to skip (substrings in file paths).
+
+If no config file is found, default directories and skip patterns are used.
+
+Copy `bracketsmith.json.example` to get started.
+
+---
+
 ## 🧪 Tests
 
 ```bash

@@ -22,6 +22,19 @@ class BracketSmith
     ];
 
     /**
+     * Patterns of directories to skip
+     *
+     * @var array
+     */
+    private array $skip_patterns = [
+        "vendor/",
+        "storage/",
+        "bootstrap/cache/",
+        "node_modules/",
+        ".git/",
+    ];
+
+    /**
      * Counter of processed files
      *
      * @var int
@@ -55,7 +68,36 @@ class BracketSmith
          * @var bool
          */
         private readonly bool $verbose = false
-    ) {}
+    ) {
+        $this->loadConfig();
+    }
+
+    /**
+     * Load configuration from bracketsmith.json file in project root
+     *
+     * @return void
+     */
+    private function loadConfig() : void
+    {
+        $config_file = getcwd() . DIRECTORY_SEPARATOR . 'bracketsmith.json';
+
+        if ( ! file_exists( $config_file ) )
+            return; // Use defaults
+
+        $config = json_decode( file_get_contents( $config_file ), true );
+
+        if ( json_last_error() !== JSON_ERROR_NONE )
+        {
+            $this->log( "⚠️ Invalid JSON in bracketsmith.json: " . json_last_error_msg() );
+            return;
+        }
+
+        if ( isset( $config['directories'] ) && is_array( $config['directories'] ) )
+            $this->directories = $config['directories'];
+
+        if ( isset( $config['skip_patterns'] ) && is_array( $config['skip_patterns'] ) )
+            $this->skip_patterns = $config['skip_patterns'];
+    }
 
     /**
      * Executes processing on all configured directories
@@ -318,15 +360,7 @@ class BracketSmith
      */
     private function shouldSkipFile( string $file_path ) : bool
     {
-        $skip_patterns = [
-            "vendor/",
-            "storage/",
-            "bootstrap/cache/",
-            "node_modules/",
-            ".git/",
-        ];
-
-        foreach ( $skip_patterns as $skip_pattern )
+        foreach ( $this->skip_patterns as $skip_pattern )
             if ( str_contains( $file_path, $skip_pattern ) )
                 return true;
 
