@@ -232,94 +232,27 @@ class BracketSmith
      */
     private function addSpacesToArrays( string $content ) : string
     {
-        $tokens             = token_get_all( $content );
-        $max_iterations     = 20;
-        $debug_arrays_found = 0;
-        $code_buffer        = "";
-        $parts              = [];
+        $max_iterations = 20;
+        $iteration      = 0;
 
-        // 1. Separate pure code from strings/comments, keeping the order
-        foreach ( $tokens as $token )
+        do
         {
-            if ( is_array( $token ) )
-            {
-                $id   = $token[ 0 ];
-                $text = $token[ 1 ];
+            $old = $content;
 
-                if ( ! in_array( $id, [ T_CONSTANT_ENCAPSED_STRING, T_ENCAPSED_AND_WHITESPACE, T_START_HEREDOC, T_END_HEREDOC, T_DOC_COMMENT, T_COMMENT ], true ) )
+            $content = preg_replace_callback(
+                "/\[([^\[\]\n\r]*[\\\"',][^\[\]\n\r]*)\]/",
+                function ( $matches )
                 {
-                    $code_buffer .= $text;
-                }
-                else
-                {
-                    // When finding string/comment, save the accumulated code before
-                    if ( $code_buffer !== "" )
-                    {
-                        $parts[]    = [
-                            "type" => "code",
-                            "text" => $code_buffer
-                        ];
+                    return $this->processArrayMatch( $matches );
+                },
+                $content
+            );
 
-                        $code_buffer = "";
-                    }
-
-                    $parts[] = [
-                        "type" => "literal",
-                        "text" => $text
-                    ];
-                }
-            }
-            else
-            {
-                $code_buffer .= $token;
-            }
+            $iteration++;
         }
+        while ( $content !== $old && $iteration < $max_iterations );
 
-        if ( $code_buffer !== "" )
-        {
-            $parts[] = [
-                "type" => "code",
-                "text" => $code_buffer
-            ];
-        }
-
-        // 2. Process only code segments
-        foreach ( $parts as &$part )
-        {
-            if ( $part[ "type" ] === "code" )
-            {
-                $iteration = 0;
-
-                do
-                {
-                    $old = $part[ "text" ];
-
-                    $part[ "text" ] = preg_replace_callback(
-                        "/\[([^\[\]\n\r]*)\]/",
-                        function ( $matches ) use ( &$debug_arrays_found )
-                        {
-                            $debug_arrays_found++;
-
-                            return $this->processArrayMatch( $matches );
-                        },
-                        $part[ "text" ]
-                    );
-
-                    $iteration++;
-                }
-                while ( $part[ "text" ] !== $old && $iteration < $max_iterations );
-            }
-        }
-
-        unset( $part );
-
-        // 3. Rebuilds the file
-        $out = "";
-
-        foreach ( $parts as $part )
-            $out .= $part[ "text" ];
-
-        return $out;
+        return $content;
     }
 
     /**
@@ -335,14 +268,45 @@ class BracketSmith
         $array_content = $matches[ 1 ];
 
         // Checks if the content is not empty
-        if ( mb_trim( $array_content ) === "" )
+        if ( $this->mb_trim( $array_content ) === "" )
             return $full_match; // Empty array, do not modify
 
+        // Check if this looks like a regex character class (contains only letters, digits, ^, -, \)
+        // and does not contain quotes or commas (which would indicate a PHP array)
+        if ( !preg_match( '/["\',]/', $array_content ) && preg_match( '/^[\w^\\\-]+$/', $array_content ) )
+            return $full_match; // Likely a regex character class, do not modify
+
         // Remove leading/trailing spaces for normalization
-        $trimmed_content = mb_trim( $array_content );
+        $trimmed_content = $this->mb_trim( $array_content );
 
         // Always return with single space after [ and before ]
         return "[ " . $trimmed_content . " ]";
+    }
+
+    /**
+     * Multibyte-safe trim helper.
+     * Provides a local mb_trim to avoid depending on a global function.
+     *
+     * @param string $value
+     *
+     * @return string
+     */
+    private function mb_trim( string $value ) : string
+    {
+        // If mbstring is available use it, otherwise fall back to trim
+        if ( function_exists( 'mb_trim' ) ) {
+            // If a global mb_trim exists, prefer it (backwards-compat)
+            return mb_trim( $value );
+        }
+
+        if ( function_exists( 'mb_strlen' ) ) {
+            // remove BOM if present
+            $value = preg_replace('/\A\x{FEFF}/u', '', $value);
+            // mimic trim using unicode whitespace
+            return preg_replace('/^\s+|\s+\$/u', '', $value);
+        }
+
+        return trim( $value );
     }
 
     /**
