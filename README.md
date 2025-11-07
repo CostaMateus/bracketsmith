@@ -45,22 +45,15 @@ Example `bracketsmith.json`:
 
 ```json
 {
-    "directories": [
-        "app/",
-        "routes/"
-    ],
-    "skip_patterns": [
-        "vendor/",
-        "storage/",
-        "node_modules/"
-    ]
+	"include": ["app/", "routes/"],
+	"exclude": ["vendor/", "storage/", "node_modules/"]
 }
 ```
 
-- `directories`: Array of directories to process (relative paths).
-- `skip_patterns`: Array of patterns to skip (substrings in file paths).
+- `include`: Array of directories/files to process (relative paths or patterns).
+- `exclude`: Array of patterns to skip (substrings in file paths).
 
-If no config file is found, default directories and skip patterns are used.
+If no config file is found, default include and exclude patterns are used.
 
 Copy `bracketsmith.json.example` to get started.
 

@@ -9,11 +9,11 @@ use RecursiveDirectoryIterator;
 class BracketSmith
 {
     /**
-     * Directories to process
+     * Directories/files to process
      *
      * @var array
      */
-    private array $directories = [
+    private array $include = [
         "app/",
         "config/",
         "database/",
@@ -22,11 +22,11 @@ class BracketSmith
     ];
 
     /**
-     * Patterns of directories to skip
+     * Patterns of directories/files to skip
      *
      * @var array
      */
-    private array $skip_patterns = [
+    private array $exclude = [
         "vendor/",
         "storage/",
         "bootstrap/cache/",
@@ -92,11 +92,11 @@ class BracketSmith
             return;
         }
 
-        if ( isset( $config['directories'] ) && is_array( $config['directories'] ) )
-            $this->directories = $config['directories'];
+        if ( isset( $config['include'] ) && is_array( $config['include'] ) )
+            $this->include = $config['include'];
 
-        if ( isset( $config['skip_patterns'] ) && is_array( $config['skip_patterns'] ) )
-            $this->skip_patterns = $config['skip_patterns'];
+        if ( isset( $config['exclude'] ) && is_array( $config['exclude'] ) )
+            $this->exclude = $config['exclude'];
     }
 
     /**
@@ -121,7 +121,7 @@ class BracketSmith
         }
         else
         {
-            foreach ( $this->directories as $directory )
+            foreach ( $this->include as $directory )
                 if ( ! $this->processDirectory( $directory ) )
                     $success = false;
         }
@@ -239,15 +239,15 @@ class BracketSmith
     }
 
     /**
-     * Configure custom directories
+     * Configure custom include paths
      *
-     * @param array $directories
+     * @param array $include
      *
      * @return self
      */
-    public function setDirectories( array $directories ) : self
+    public function setInclude( array $include ) : self
     {
-        $this->directories = $directories;
+        $this->include = $include;
 
         return $this;
     }
@@ -360,8 +360,8 @@ class BracketSmith
      */
     private function shouldSkipFile( string $file_path ) : bool
     {
-        foreach ( $this->skip_patterns as $skip_pattern )
-            if ( str_contains( $file_path, $skip_pattern ) )
+        foreach ( $this->exclude as $exclude_pattern )
+            if ( str_contains( $file_path, $exclude_pattern ) )
                 return true;
 
         return false;

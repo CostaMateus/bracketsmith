@@ -1,12 +1,12 @@
 {
-    "directories": [
+    "include": [
         "app/",
         "config/",
         "database/",
         "lang/",
         "routes/"
     ],
-    "skip_patterns": [
+    "exclude": [
         "vendor/",
         "storage/",
         "bootstrap/cache/",
