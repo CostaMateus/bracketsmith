@@ -265,90 +265,80 @@ class BracketSmith
         ];
     }
 
-    /**
-     * Adds spaces to single-line arrays
-     *
-     * @param string $content
-     *
-     * @return string
-     */
     private function addSpacesToArrays( string $content ) : string
     {
-        $max_iterations = 20;
-        $iteration      = 0;
+        $tokens = token_get_all( $content );
+        $result = "";
+        $in_encapsed_string = false;
+        $encapsed_string_delimiter = "";
+        $in_heredoc = false;
 
-        do
+        foreach ( $tokens as $index => $token )
         {
-            $old = $content;
+            if ( is_array( $token ) )
+            {
+                $result .= $token[ 1 ];
 
-            $content = preg_replace_callback(
-                "/\[([^\[\]\n\r]*[\\\"',][^\[\]\n\r]*)\]/",
-                function ( $matches )
+                if ( $token[ 0 ] === T_START_HEREDOC )
+                    $in_heredoc = true;
+                elseif ( $token[ 0 ] === T_END_HEREDOC )
+                    $in_heredoc = false;
+
+                continue;
+            }
+
+            if ( $in_heredoc )
+            {
+                $result .= $token;
+                continue;
+            }
+
+            if ( $in_encapsed_string )
+            {
+                $result .= $token;
+
+                if ( $token === $encapsed_string_delimiter )
                 {
-                    return $this->processArrayMatch( $matches );
-                },
-                $content
-            );
+                    $in_encapsed_string = false;
+                    $encapsed_string_delimiter = "";
+                }
 
-            $iteration++;
-        }
-        while ( $content !== $old && $iteration < $max_iterations );
+                continue;
+            }
 
-        return $content;
-    }
+            if ( $token === '"' || $token === '`' )
+            {
+                $in_encapsed_string = true;
+                $encapsed_string_delimiter = $token;
+                $result .= $token;
+                continue;
+            }
 
-    /**
-     * Process a specific array match
-     *
-     * @param array $matches
-     *
-     * @return string
-     */
-    private function processArrayMatch( array $matches ) : string
-    {
-        $full_match = $matches[ 0 ];
-        $array_content = $matches[ 1 ];
+            if ( $token === "[" )
+            {
+                $result .= "[";
+                $next_token = $tokens[ $index + 1 ] ?? null;
+                $next_text = is_array( $next_token ) ? $next_token[ 1 ] : $next_token;
 
-        // Checks if the content is not empty
-        if ( $this->mb_trim( $array_content ) === "" )
-            return $full_match; // Empty array, do not modify
+                if ( $next_text !== "]" && $next_text !== null && ! preg_match( '/^[ \r\n\t\f\v]/', $next_text ) )
+                    $result .= " ";
 
-        // Check if this looks like a regex character class (contains only letters, digits, ^, -, \)
-        // and does not contain quotes or commas (which would indicate a PHP array)
-        if ( !preg_match( '/["\',]/', $array_content ) && preg_match( '/^[\w^\\\-]+$/', $array_content ) )
-            return $full_match; // Likely a regex character class, do not modify
+                continue;
+            }
 
-        // Remove leading/trailing spaces for normalization
-        $trimmed_content = $this->mb_trim( $array_content );
+            if ( $token === "]" )
+            {
+                if ( $result !== "" && ! str_ends_with( $result, "[" ) && ! preg_match( '/[ \r\n\t\f\v]\z/', $result ) )
+                    $result .= " ";
 
-        // Always return with single space after [ and before ]
-        return "[ " . $trimmed_content . " ]";
-    }
+                $result .= "]";
+                continue;
+            }
 
-    /**
-     * Multibyte-safe trim helper.
-     * Provides a local mb_trim to avoid depending on a global function.
-     *
-     * @param string $value
-     *
-     * @return string
-     */
-    private function mb_trim( string $value ) : string
-    {
-        // If mbstring is available use it, otherwise fall back to trim
-        if ( function_exists( 'mb_trim' ) ) {
-            // If a global mb_trim exists, prefer it (backwards-compat)
-            return mb_trim( $value );
+            $result .= $token;
         }
 
-        if ( function_exists( 'mb_strlen' ) ) {
-            // remove BOM if present
-            $value = preg_replace('/\A\x{FEFF}/u', '', $value);
-            // mimic trim using unicode whitespace
-            return preg_replace('/^\s+|\s+\$/u', '', $value);
-        }
-
-        return trim( $value );
+        return $result;
     }
 
     /**
