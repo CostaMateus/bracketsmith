@@ -18,7 +18,31 @@ foreach ( $autoloadPaths as $file )
 
 use BracketSmith\BracketSmith;
 
-$options = getopt( "", [ "dry-run", "verbose", "help" ] );
+$options = [];
+$files = [];
+$end_options = false;
+foreach ( array_slice( $argv, 1 ) as $argument )
+{
+    if ( ! $end_options && $argument === '--' )
+    {
+        $end_options = true;
+        continue;
+    }
+
+    if ( ! $end_options && str_starts_with( $argument, '-' ) )
+    {
+        if ( ! in_array( $argument, [ '--dry-run', '--verbose', '--help' ], true ) )
+        {
+            fwrite( STDERR, "BracketSmith: Unknown option: $argument\n" );
+            exit( 1 );
+        }
+        $options[ substr( $argument, 2 ) ] = true;
+    }
+    else
+    {
+        $files[] = $argument;
+    }
+}
 
 // Show help
 if ( isset( $options[ "help" ] ) )
@@ -29,6 +53,7 @@ if ( isset( $options[ "help" ] ) )
     echo "  --dry-run    Check without modifying files\n";
     echo "  --verbose    Detailed output\n";
     echo "  --help       Show this help\n\n";
+    echo "Use -- before file names that start with a dash.\n\n";
     echo "If no files are specified, processes: app/, config/, database/, lang/, routes/\n";
 
     exit( 0 );
@@ -36,9 +61,6 @@ if ( isset( $options[ "help" ] ) )
 
 $dry_run = isset( $options[ "dry-run" ] );
 $verbose = isset( $options[ "verbose" ] );
-
-$files = array_slice( $argv, 1 );
-$files = array_filter( $files, fn( $arg ) => ! str_starts_with( $arg, "--" ) );
 
 try
 {

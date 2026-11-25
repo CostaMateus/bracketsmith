@@ -1,5 +1,33 @@
 # Changelog
 
+## Unreleased
+
+- Reject unknown CLI options before selecting any targets, accept options after
+  paths and honor `--` for dash-prefixed file names. Misspelled dry-run flags no
+  longer trigger writes to default directories.
+- Reject unknown configuration keys instead of silently falling back to defaults.
+- Require explicitly configured and API-selected paths to exist. Missing default
+  directories remain optional; an explicit missing directory now reports failure.
+- Replace changed files using a complete same-directory temporary write followed
+  by rename. Failed writes/replacements leave the original intact and clean up
+  the temporary file. Preserve basic permission/owner/group metadata, resolve
+  file symlinks and refuse multiply hard-linked files. Check for intervening
+  content edits before replacement; simultaneous writers still require external
+  coordination. Extended ACLs/xattrs and power-loss durability are not guaranteed.
+- Normalize horizontal bracket spacing to one space for non-empty arrays and
+  index/destructuring expressions, and compact empty inline arrays to `[]`.
+  Preserve line breaks/indentation and complete attribute groups, including all
+  arrays, spaces, strings and comments inside their arguments.
+- Fix nested interpolated strings, backticks and heredocs being mistaken for
+  ordinary PHP code. Preserve their contents using a stack of lexical contexts;
+  continue formatting arrays after the outer string closes.
+- Parse proposed changes with the selected PHP runtime before accepting them,
+  including dry-runs. On a parse error, return failure without overwriting the
+  original file. This check applies to changed output, not every existing file.
+- Add regression coverage for the previously valid-to-invalid transformation,
+  nested interpolation and heredoc combinations, preservation, idempotence and
+  rejected invalid output.
+
 ## 0.2.1 - 2026-11-25
 
 ### Compatibility investigation

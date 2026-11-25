@@ -2,6 +2,11 @@
 
 **BracketSmith** is a lightweight PHP tool for standardizing array spacing — keeping your square brackets `[ ]` clean and consistent.
 
+Non-empty inline arrays, destructuring and index accesses get one space next to
+each bracket; empty inline arrays use `[]`. Existing line breaks and indentation
+are preserved. Entire attribute groups such as `#[Example([1])]` are left
+untouched, including arrays, spaces, strings and comments inside their arguments.
+
 ---
 
 ## Compatibility
@@ -54,7 +59,27 @@ Optional parameters:
 
 Exit status is `0` on successful processing (including a dry-run that finds
 changes), and `1` for configuration or processing failures. Dry-run never rewrites
-files. Options must precede file/directory arguments.
+files. Unknown options (including misspelled flags) fail before processing any
+file. Options may appear before or after paths; use `--` to end option parsing
+when a file name starts with a dash, for example `bracketsmith -- --file.php`.
+
+Before accepting a change, BracketSmith parses the proposed output with the CLI
+PHP runtime. If parsing fails, the original file is left untouched and the
+operation fails, including in dry-run mode. Use a PHP runtime that supports the
+source syntax. Unmodified files are not linted by this check.
+
+Changed files are written completely to a temporary file in the same directory
+and then replaced with `rename`. A temporary-write or replacement failure leaves
+the original intact and returns an error. This requires directory write access
+as well as a writable target. File symlinks resolve to their targets; files with
+multiple hard links are refused to avoid breaking their shared-file semantics.
+Basic permission bits, owner and group are preserved where supported; extended
+ACLs and other filesystem attributes are not copied by native PHP replacement.
+
+Content is checked again before replacement to detect intervening edits. This
+is not a lock against simultaneous writers, a transaction across multiple files,
+or a guarantee of durability through power loss. Coordinate concurrent writers
+externally; earlier successful file changes are not rolled back if another fails.
 
 ---
 
@@ -75,11 +100,16 @@ Example `bracketsmith.json`:
 - `exclude`: Array of patterns to skip (substrings in file paths).
 
 If no config file is found, default include and exclude patterns are used.
-If a configuration file exists but contains invalid JSON, invalid path lists or
+Only `include` and `exclude` configuration keys are accepted. If a configuration
+file contains unknown keys, invalid JSON, invalid path lists or
 cannot be read, processing stops with an error. It does not fall back to default
 directories and modify unintended files. Exclusions accept either Windows or Unix
 directory separators during directory traversal; explicit file arguments are
 processed directly.
+
+Every path explicitly selected through `include`, `setInclude()` or CLI arguments
+must exist, otherwise processing reports failure. Missing default directories
+remain optional, allowing projects without `lang/` or other standard folders.
 
 Copy `bracketsmith.json.example` to get started.
 
@@ -93,7 +123,8 @@ composer test
 ```
 
 Tests exercise formatting, token preservation, CLI exit codes, dry-run,
-idempotence, configuration validation, directory errors and cross-platform
+idempotence, configuration validation, directory errors, failed atomic writes,
+complete attribute preservation and cross-platform
 exclusions using disposable files. They never format an existing application.
 
 ---
