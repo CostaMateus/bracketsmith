@@ -3,6 +3,8 @@
 namespace BracketSmith;
 
 use Exception;
+use RuntimeException;
+use InvalidArgumentException;
 use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
 
@@ -84,19 +86,32 @@ class BracketSmith
         if ( ! file_exists( $config_file ) )
             return; // Use defaults
 
-        $config = json_decode( file_get_contents( $config_file ), true );
+        $json = @file_get_contents( $config_file );
 
-        if ( json_last_error() !== JSON_ERROR_NONE )
+        if ( $json === false )
+            throw new InvalidArgumentException( "Cannot read bracketsmith.json." );
+
+        $config = json_decode( $json, false, 512, JSON_THROW_ON_ERROR );
+
+        if ( ! $config instanceof \stdClass )
+            throw new InvalidArgumentException( "bracketsmith.json must contain an object." );
+
+        $config = (array) $config;
+
+        foreach ( [ 'include', 'exclude' ] as $key )
         {
-            $this->log( "⚠️ Invalid JSON in bracketsmith.json: " . json_last_error_msg() );
-            return;
+            if ( ! array_key_exists( $key, $config ) )
+                continue;
+
+            if ( ! is_array( $config[ $key ] ) || ! array_is_list( $config[ $key ] ) )
+                throw new InvalidArgumentException( "$key must be a list of paths." );
+
+            foreach ( $config[ $key ] as $path )
+                if ( ! is_string( $path ) || trim( $path ) === '' )
+                    throw new InvalidArgumentException( "$key paths must be non-empty strings." );
+
+            $this->{$key} = $config[ $key ];
         }
-
-        if ( isset( $config['include'] ) && is_array( $config['include'] ) )
-            $this->include = $config['include'];
-
-        if ( isset( $config['exclude'] ) && is_array( $config['exclude'] ) )
-            $this->exclude = $config['exclude'];
     }
 
     /**
@@ -122,7 +137,7 @@ class BracketSmith
         else
         {
             foreach ( $this->include as $directory )
-                if ( ! $this->processDirectory( $directory ) )
+                if ( ! ( is_file( $directory ) ? $this->processFile( $directory ) : $this->processDirectory( $directory ) ) )
                     $success = false;
         }
 
@@ -156,6 +171,8 @@ class BracketSmith
                 )
             );
 
+            $success = true;
+
             foreach ( $iterator as $file )
             {
                 if ( $file->isFile() && $file->getExtension() === "php" )
@@ -166,11 +183,12 @@ class BracketSmith
                     if ( $this->shouldSkipFile( $file_path ) )
                         continue;
 
-                    $this->processFile( $file_path );
+                    if ( ! $this->processFile( $file_path ) )
+                        $success = false;
                 }
             }
 
-            return true;
+            return $success;
         }
         catch ( Exception $e )
         {
@@ -205,23 +223,29 @@ class BracketSmith
 
         try
         {
-            $content     = file_get_contents( $path );
+            $content = @file_get_contents( $path );
+
+            if ( $content === false )
+                throw new RuntimeException( "Cannot read file: " . $path );
 
             $new_content = $this->addSpacesToArrays( $content );
 
             if ( $content !== $new_content )
             {
-                $this->changed_count++;
-
                 if ( ! $this->dry_run )
                 {
-                    file_put_contents( $path, $new_content );
+                    // ponytail: in-place writes are not atomic; atomic replacement would need a same-directory temp file and rename.
+                    if ( @file_put_contents( $path, $new_content ) !== strlen( $new_content ) )
+                        throw new RuntimeException( "Cannot write complete file: " . $path );
+
                     $this->verboseLog( "✅ Processed: " . $path );
                 }
                 else
                 {
                     $this->verboseLog( "🔍 Would be processed: " . $path );
                 }
+
+                $this->changed_count++;
 
                 return true;
             }
@@ -350,8 +374,10 @@ class BracketSmith
      */
     private function shouldSkipFile( string $file_path ) : bool
     {
+        $file_path = str_replace( '\\', '/', $file_path );
+
         foreach ( $this->exclude as $exclude_pattern )
-            if ( str_contains( $file_path, $exclude_pattern ) )
+            if ( str_contains( $file_path, str_replace( '\\', '/', $exclude_pattern ) ) )
                 return true;
 
         return false;

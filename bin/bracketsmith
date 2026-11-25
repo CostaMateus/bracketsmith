@@ -40,5 +40,13 @@ $verbose = isset( $options[ "verbose" ] );
 $files = array_slice( $argv, 1 );
 $files = array_filter( $files, fn( $arg ) => ! str_starts_with( $arg, "--" ) );
 
-$smith = new BracketSmith( $dry_run, $verbose );
-$smith->run( $files );
+try
+{
+    $smith = new BracketSmith( $dry_run, $verbose );
+    exit( $smith->run( $files ) ? 0 : 1 );
+}
+catch ( Throwable $e )
+{
+    fwrite( STDERR, "BracketSmith: " . $e->getMessage() . "\n" );
+    exit( 1 );
+}
