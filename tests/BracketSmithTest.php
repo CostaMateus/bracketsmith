@@ -232,7 +232,7 @@ function file_put_contents($path, $data, $flags = 0) {
     return \file_put_contents($path, substr($data, 0, 10), $flags);
 }
 PHP);
-        [$exit] = $this->cli(['example.php'], ['-d', 'auto_prepend_file='.$this->directory.'/inject.php']);
+        [$exit] = $this->cli(['example.php'], ['-d', 'auto_prepend_file=inject.php']);
         $this->assertSame(1, $exit);
         $this->assertSame('<?php return [1,2];', file_get_contents('example.php'));
         $this->assertSame([], glob($this->directory.'/bsm*'));
@@ -246,7 +246,7 @@ PHP);
 namespace BracketSmith;
 function rename($from, $to) { return false; }
 PHP);
-        [$exit] = $this->cli(['example.php'], ['-d', 'auto_prepend_file='.$this->directory.'/inject.php']);
+        [$exit] = $this->cli(['example.php'], ['-d', 'auto_prepend_file=inject.php']);
         $this->assertSame(1, $exit);
         $this->assertSame('<?php return [1,2];', file_get_contents('example.php'));
         $this->assertSame([], glob($this->directory.'/bsm*'));
@@ -266,7 +266,7 @@ function file_put_contents($path, $data, $flags = 0) {
     return $result;
 }
 PHP);
-        [$exit] = $this->cli(['example.php'], ['-d', 'auto_prepend_file='.$this->directory.'/inject.php']);
+        [$exit] = $this->cli(['example.php'], ['-d', 'auto_prepend_file=inject.php']);
         $this->assertSame(1, $exit);
         $this->assertSame('<?php return [9];', file_get_contents('example.php'));
         $this->assertSame([], glob($this->directory.'/bsm*'));
