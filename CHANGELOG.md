@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.2 - 2026-11-25
 
 - Reject unknown CLI options before selecting any targets, accept options after
   paths and honor `--` for dash-prefixed file names. Misspelled dry-run flags no
@@ -27,6 +27,12 @@
 - Add regression coverage for the previously valid-to-invalid transformation,
   nested interpolation and heredoc combinations, preservation, idempotence and
   rejected invalid output.
+- Expand the suite to 72 test cases: exact expected formatting, non-whitespace
+  token preservation, dry-run, idempotence and execution results for controlled
+  literal snippets. Validate arrays, offsets, references, destructuring, attributes,
+  interpolation, heredocs, comments, inline HTML and version-specific PHP syntax.
+  PHP 8.4–8.6 pass 469 assertions; PHP 8.1/8.2/8.3 skip 3/2/1 syntax fixtures
+  unavailable on those runtimes and pass 445/453/461 assertions respectively.
 
 ## 0.2.1 - 2026-11-25
 

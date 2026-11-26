@@ -11,7 +11,7 @@ untouched, including arrays, spaces, strings and comments inside their arguments
 
 ## Compatibility
 
-Version **0.2.1** supports PHP **8.1–8.6** and requires the native `tokenizer`
+Version **0.2.2** supports PHP **8.1–8.6** and requires the native `tokenizer`
 extension. PHP 8.1 is retained for existing users but is already end of life;
 prefer a supported PHP release for new installations.
 
